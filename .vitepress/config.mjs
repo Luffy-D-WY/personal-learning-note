@@ -15,7 +15,7 @@ export default defineConfig({
         {text:'多模态', link: '/multimodel' },
         {text:'大模型安全', link: '/llm-safety' }
       ] },
-      { text: 'Examples', link: '/markdown-examples' }
+      { text: '日记', link: '/diary' }
     ],
     logo: "icon.png", // 配置logo位置，public目录
     // sidebar: [
