@@ -4,16 +4,16 @@ import { set_sidebar } from "../utils/auto_sidebar.mjs";	// 改成自己的路�
 export default defineConfig({
   base: '/personal-learning-note/', // 设置站点根路径
   head: [["link", { rel: "icon", href: "/personal-learning-note/icon.png" }]],
-  title: "My Awesome Project",
-  description: "A VitePress Site",
+  title: "个人学习记录",
+  description: "JMComics学习记录，博士学习日记，个人技术博客，个人学习笔记",
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     outlineTitle:'目录',
     outline:[2,6], // 目录层级
     nav: [
-      { text: 'Home', items:[
-        {text:'api-examples', link: '/api-examples' },
-        {text:'markdown-examples', link: '/markdown-examples' }
+      { text: '论文阅读笔记', items:[
+        {text:'多模态', link: '/multimodel' },
+        {text:'大模型安全', link: '/llm-safety' }
       ] },
       { text: 'Examples', link: '/markdown-examples' }
     ],
@@ -44,7 +44,7 @@ export default defineConfig({
     ],
 
     footer: {
-      copyright: 'Copyright © 2025 WY',
+      copyright: 'Copyright © 2024-present Luffy-D-WY'
     },
        // 设置搜索框的样式
     search: {
