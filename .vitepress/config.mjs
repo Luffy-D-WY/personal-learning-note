@@ -2,7 +2,8 @@ import { defineConfig } from 'vitepress'
 import { set_sidebar } from "../utils/auto_sidebar.mjs";	// 改成自己的路径
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
-  head: [["link", { rel: "icon", href: "/icon.png" }]],
+  base: '/personal-learning-note/', // 设置站点根路径
+  head: [["link", { rel: "icon", href: "/personal-learning-note/icon.png" }]],
   title: "My Awesome Project",
   description: "A VitePress Site",
   themeConfig: {
