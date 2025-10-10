@@ -1,0 +1,66 @@
+name: Deploy VitePress site to Pages
+
+on:
+  push:
+    branches: [master]
+
+# 设置token访问权限
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 同时只允许一次部署
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  # 构建任务
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4  # ✅ 升级 v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10.18.2  # 你的 pnpm 版本
+
+      - name: Setup Node
+        uses: actions/setup-node@v4  # ✅ 升级 v4
+        with:
+          node-version: 18.19.0  # ✅ 建议与你本地版本一致
+          cache: pnpm
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5  # ✅ 升级 v5
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build with VitePress
+        run: |
+          pnpm run docs:build
+          touch .vitepress/dist/.nojekyll  # ✅ 把 .nojekyll 放在 dist 里更规范
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3  # ✅ 升级 v3
+        with:
+          path: .vitepress/dist
+
+  # 部署任务
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    needs: build
+    runs-on: ubuntu-latest
+    name: Deploy
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4  # ✅ 升级 v4
