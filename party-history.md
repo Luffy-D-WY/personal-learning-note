@@ -469,4 +469,12 @@
 
 
 ## 发展党员流程
+![alt text](images/image.png)
+![alt text](images/image-2.png)
+![alt text](images/image-1.png)
+![alt text](images/image-3.png)
 ![alt text](images/发展党员流程.jpg)
+
+
+## 资料
+[题集1](\files\真题1.pdf)
