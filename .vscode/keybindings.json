@@ -1,5 +1,0 @@
-{
-  "key": "ctrl+alt+u",
-  "command": "workbench.action.tasks.runTask",
-  "args": "一键更新网站"
-}
