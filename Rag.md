@@ -1,7 +1,9 @@
 # Retrieval-Augmented Generation
 ## RAG-R1 : Incentivize the Search and Reasoning Capabilities of LLMs through Multi-query Parallelism
 
-AI [gpt](https://chatgpt.com/c/68ef4928-c1c0-8321-a95b-59dc287d6d27)
+AI 
+[gpt](https://chatgpt.com/c/68ef4928-c1c0-8321-a95b-59dc287d6d27)
+
 [豆包](https://www.doubao.com/chat/24645709807347970)
 ### RAG产生背景
 响应质量问题：LLMs 的内置知识固定于训练数据截止时间，无法实时更新，在处理复杂问题或实时场景时，易生成幻觉内容（虚假信息）或过时响应，例如对近年事件的回答仍依赖旧数据，或编造看似合理却无事实依据的结论。
@@ -20,94 +22,114 @@ AI [gpt](https://chatgpt.com/c/68ef4928-c1c0-8321-a95b-59dc287d6d27)
 提出全新训练框架 RAG - R1，使大语言模型（LLMs）能在推理过程中自适应利用内部和外部知识，提升正确回答问题的推理能力。
 
 将框架内的生成与检索过程从单查询模式拓展为多查询并行模式，既减少了模型的检索轮次和推理时间，又进一步提高了模型性能。
+![alt text](./images/image-4.png)
 
 
-![alt text](images/image-4.png)
 ### SFT阶段
-#### 类别 A：仅推理并给出答案（Think → Answer）
 
-用途：教模型在已有内部知识足够时如何直接从 <think> 到 <answer>，即学会“用内部知识推理并给出答案”。
+#### 类别 A：仅推理并给出答案（Think -> Answer）
 
-Input（上下文）：Question + 已有对话上下文（可能包含先前的 <think> 和 <information>）
 
-Target（模型输出）：<think> ... </think> <answer> ... </answer>
+用途：教模型在已有内部知识足够时如何直接从 "think;" 到 "answer;"，即学会用内部知识推理并给出答案。
+
+Input（上下文）：Question + 已有对话上下文（可能包含先前的 "think;" 和 "information;"）
+
+Target（模型输出）："think; ... think; answer; ... answer;"
 
 示例模板：
 
 Input: Question: Which magazine was started first Arthur’s Magazine or First for Women?
 
-Target: <think> Compare founding years: Arthur’s 1844, First for Women 1978. </think><answer>Arthur’s Magazine</answer>
+Target: "think; Compare founding years: Arthur’s 1844, First for Women 1978. think; answer; Arthur’s Magazine answer;"
 
-要点：输出不包含任何 <information>（若上下文里有检索结果，训练目标仍只要求模型生成推理和答案，不要求复述检索文档）。
+要点：输出不包含任何 "information;"，训练目标只要求模型生成推理和答案，不要求复述检索文档。
 
-#### 类别 B：推理 → 发起检索（不立刻给答案）（Think → Search）
 
-用途：教模型在“内部知识不足”时何时、如何构造检索查询（即学会提出有效的 search query）。
+#### 类别 B：推理 -> 发起检索（不立刻给答案）（Think -> Search）
 
-Input（上下文）：Question + 之前的 <think> 推理（说明为什么需要更多信息） +（可含已存在的 <information>）
 
-Target（模型输出）：<search> query1 [, query2, ...] </search>
+用途：教模型在内部知识不足时，如何构造检索查询（学会提出有效的 search query）。
 
-示例模板：
+Input（上下文）：Question + 之前的 "think;" 推理（说明为什么需要更多信息） +（可含已存在的 "information;"）
 
-Input: Question: ... <think> I need founding years but not in my parametric memory. </think>
-
-Target: <search> Arthur’s Magazine founding year, First for Women founding year </search>
-
-要点：训练模型学会如何把推理中的知识缺口转成检索语句；这类样本不会要求模型在该轮给出最终答案（答案将由后续轮次结合检索内容生成）。
-
-#### 类别 C：（含检索信息）推理并给答案（Think + Info → Answer）
-
-用途：教模型如何在获得外部信息后进行基于外部信息的推理并给出答案（学会整合检索结果进行决策）。
-
-Input（上下文）：Question + （之前的）<think> + <search> + <information>（检索返回，供上下文参考）
-
-Target（模型输出）：<think>（基于 <information> 的推理）</think><answer> ... </answer>
+Target（模型输出）："search; query1 [, query2, ...] search;"
 
 示例模板：
 
-Input: Question ... <think> need founding years </think><search> ... </search><information> Doc: Arthur’s Magazine (1844-1846); Doc: First for Women (1978) </information>
+Input: Question: ... "think; I need founding years but not in my parametric memory. think;"
 
-Target: <think> Arthur's 1844 < First for Women 1978, so Arthur's Magazine started earlier. </think><answer>Arthur’s Magazine</answer>
+Target: "search; Arthur’s Magazine founding year, First for Women founding year search;"
 
-要点：虽然检索文档出现在输入中，但训练目标仍仅要求模型生成推理与答案，不要求输出检索文本本身（从而抑制盲目复述 retrieved docs）。
+要点：训练模型学会把推理中的知识缺口转成检索语句；这一轮不会要求模型给出最终答案。
 
-#### 类别 D：（含检索信息）推理 → 再次发起检索（Think + Info → Search）
 
-用途：教模型在已有外部信息仍不足或需要对齐更多证据时，如何基于现有信息重写/扩展检索查询并再次检索（多轮检索策略）。
 
-Input（上下文）：Question + <think> + <search> + <information>（已有检索结果）
 
-Target（模型输出）：<think>（说明现有信息为何还不够）</think><search> new_query1 [, new_query2] </search>
+#### 类别 C：（含检索信息）推理并给答案（Think \+ Info \-\> Answer）
+
+
+用途：教模型在获得外部信息后，基于信息进行推理并给出答案（整合检索结果决策）。
+
+Input（上下文）：Question + 之前的 "think;" + "search;" + "information;"（检索返回，供参考）
+
+Target（模型输出）："think;"（基于 "information;" 的推理）"think; answer; ... answer;"
 
 示例模板：
 
-Input: ... <search> query1 </search><information> Doc1 ... ambiguous </information><think> Doc1 ambiguous; need authoritative founding year sources. </think>
+Input: Question ... "think; need founding years think; search; ... search; information; Doc: Arthur’s Magazine (1844-1846); Doc: First for Women (1978) information;"
 
-Target: <search> "Arthur's Magazine founding year primary source", "Arthur's Magazine publication dates" </search>
+Target: "think; Arthur's 1844 < First for Women 1978, so Arthur's Magazine started earlier. think; answer; Arthur’s Magazine answer;"
 
-要点：训练模型学会基于已检索证据决策下一步检索要点，从而支持多查询/多轮检索策略。
+要点：训练目标仅要求生成推理与答案，不要求输出检索文档本身。
+
+
+
+
+#### 类别 D：（含检索信息）推理 -> 再次发起检索（Think + Info -> Search）
+
+
+用途：教模型在已有外部信息仍不足时，如何基于现有信息扩展检索查询（多轮检索策略）。
+
+Input（上下文）：Question + "think;" + "search;" + "information;"（已有检索结果）
+
+Target（模型输出）："think;"（说明现有信息为何不足）"think; search; new_query1 [, new_query2] search;"
+
+示例模板：
+
+Input: ... "search; query1 search; information; Doc1 ... ambiguous information; think; Doc1 ambiguous; need authoritative founding year sources. think;"
+
+Target: "search; Arthur's Magazine founding year primary source, Arthur's Magazine publication dates search;"
+
+要点：训练模型学会基于已检索证据决策下一步检索要点，支持多查询/多轮检索策略。
+
+
 
 ### RL阶段
 #### 样本筛选
 初筛：选 SFT 样本生成环节中回答错误的样本，因这类样本对应模型能力短板（如未判断需检索、生成无效查询），具备挑战性，能通过 RL 优化直接提升核心能力。
+
 过滤：剔除本质不可回答的样本排除因客观条件导致错误的样本：如检索数据不完整（维基语料无关键信息）、模型固有局限（极端复杂问题），这类样本无法通过 RL 优化解答，会混乱训练信号，仅保留 “优化后可正确解答” 的样本。
+
 验证：多轮 Rollout 确认可回答性对 Qwen2.5-72B-Instruct 用随机采样验证，关键参数：采样温度 1.2（保证生成多样性且不无序）、最大检索次数 10（模拟真实资源约束）；每问题最多 10 轮 Rollout（完整 “推理 - 检索” 流程），仅保留 10 轮中至少 1 轮能正确解答的样本。
+
 补充：从 3.1.1 节随机选 25% SFT 正确样本，平衡数据集难度，避免训练震荡，提升稳定性。
 最终 RL 训练数据集由 “2488 个挑战性可回答样本 + 25% SFT 正确样本” 构成。
+
 #### 训练
 
 RL阶段的核心是让模型在与外部检索系统（R）的交互中，优化“推理-检索”决策能力，目标通过定制化目标函数实现：
+
 1. **目标函数构成**：公式（1）以“最大化期望奖励-最小化策略偏差”为核心，即最大化模型在数据集D上的平均奖励（$\mathbb{E}_{x \sim D,y\sim \pi_{\theta}(\cdot | x;\mathcal{R})}\left[r_{\phi}(x, y)\right]$），同时通过KL散度（$\mathbb{D}_{KL}\left[\pi_{\theta}(y | x; \mathcal{R}) \parallel \pi_{ref}(y | x; \mathcal{R})\right]$）和权重β约束策略模型（$\pi_{\theta}$）与参考模型（$\pi_{ref}$）的差异；
+
 2. **关键变量作用**：策略模型$\pi_{\theta}$是待优化的LLM（参数为θ），参考模型$\pi_{ref}$由SFT模型初始化（固定参数，避免$\pi_{\theta}$优化过度偏离）；x是从RL数据集D中抽取的输入样本，y是包含“LLM生成tokens+检索系统返回tokens”的完整推演序列（rollout序列），$r_{\phi}(x,y)$是评估y准确性的奖励函数。
 
 3. 序列生成（Rollout）：模拟“推理-检索”交互
 模型针对输入x生成y的过程（rollout）严格遵循3.1.1节SFT样本生成的“think-then-search”流程：先在``标签内完成内部推理，若需外部知识则在`<search>`标签内生成查询，检索系统R返回文档并以`<information>`标签融入序列，模型基于新信息继续推理，直至生成``标签内的最终答案，形成包含“可训练的生成tokens”与“不可训练的检索tokens”的y序列。
 
-4. 检索掩码损失（Retrieval Masked Loss）
+1. 检索掩码损失（Retrieval Masked Loss）
 为避免检索系统返回的tokens干扰模型自身推理与生成能力，训练时仅对LLM生成的tokens计算策略梯度目标，对检索tokens实施“掩码”——不将其纳入优化过程，既保留检索增强生成的优势（补充外部知识），又防止模型误将检索内容当作“可优化目标”，保障训练稳定性。
 
-5. 奖励建模（Reward Modeling）
+1. 奖励建模（Reward Modeling）
 采用基于最终答案准确性的规则化奖励，不额外设计格式奖励或神经奖励模型：
 - 奖励计算：通过公式（2）的精确字符串匹配（EM）评分确定$r_{\phi}(x,y)$，即从y中提取的预测答案$a_{pre}$与真实答案$a_{gold}$完全一致时，奖励为1，否则为0；
 - 设计理由：SFT阶段已让模型掌握“think-then-search”格式，无需格式奖励；不使用神经奖励模型可避免“奖励作弊”（模型拟合奖励模型缺陷而非提升真实能力）与额外计算成本。
@@ -133,7 +155,7 @@ RL阶段的核心是让模型在与外部检索系统（R）的交互中，优�
 - **系统指令约束**：通过Table 2中的系统指令明确格式要求——查询需用`<search>query1,query2</search>`包裹（多查询用逗号分隔），检索结果用`<information>`标签包裹，最终答案仍需在``内输出，确保与SFT阶段的格式兼容，不额外增加模型学习成本。
 
 ### 结果
-![alt text](images/image-5.png)
+![alt text](./images/image-5.png)
 
 ## Toward General Instruction-Following Alignment for Retrieval-Augmented Generation
 ### 一、研究背景与核心问题
@@ -144,7 +166,7 @@ RL阶段的核心是让模型在与外部检索系统（R）的交互中，优�
   - RQ2：如何在 RAG 系统中实现可扩展、可靠的 IF 对齐，同时避免与模型基础能力冲突？
 ### 二、方法框架：VIF-RAG
 VIF-RAG 是一种自动化、可扩展、可验证的指令合成与对齐数据生成框架。
-![alt text](images/image-6.png)
+![alt text](./images/image-6.png)
 
 ### 三、VIF-RAG数据集构建流程：
 1.手动构建原子指令种子集
@@ -199,10 +221,10 @@ VIF-RAG 是一种自动化、可扩展、可验证的指令合成与对齐数据
 - 做法：用监督模型对“指令 - 查询”的匹配程度打分（1~10分）。
 - 筛选标准：仅保留得分≥8分的样本，冲突样本直接剔除。
  例如：长篇传记类查询 + 严格限词指令 = 冲突 → 删除。
- 
+
 ### 四、FollowRAG 基准测试集构建
 大体思路与训练集相似
-![alt text](images/image-7.png)
+![alt text](./images/image-7.png)
 
 1. 指令收集与筛选（Instruction Collection & Extraction）
   - 从现有指令遵循数据集（如 IFEval、FollowBench）中收集原子指令；
@@ -226,5 +248,5 @@ VIF-RAG 是一种自动化、可扩展、可验证的指令合成与对齐数据
   - 将检索文档与指令-查询段落拼接，形成完整的 FollowRAG 样本输入。
 ### 五、测试结果：
 在“RAG 场景专属指令遵循评估（FollowRAG）”和“跨领域通用能力验证”两个部分进行测试，分别如下
-![alt text](images/image-8.png)
-![alt text](images/image-9.png)
+![alt text](./images/image-8.png)
+![alt text](./images/image-9.png)

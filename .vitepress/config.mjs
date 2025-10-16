@@ -1,15 +1,131 @@
 import { defineConfig } from 'vitepress'
+import markdownItKatex from 'markdown-it-katex'
+const customElements = [
+  'math',
+  'maction',
+  'maligngroup',
+  'malignmark',
+  'menclose',
+  'merror',
+  'mfenced',
+  'mfrac',
+  'mi',
+  'mlongdiv',
+  'mmultiscripts',
+  'mn',
+  'mo',
+  'mover',
+  'mpadded',
+  'mphantom',
+  'mroot',
+  'mrow',
+  'ms',
+  'mscarries',
+  'mscarry',
+  'mscarries',
+  'msgroup',
+  'mstack',
+  'mlongdiv',
+  'msline',
+  'mstack',
+  'mspace',
+  'msqrt',
+  'msrow',
+  'mstack',
+  'mstack',
+  'mstyle',
+  'msub',
+  'msup',
+  'msubsup',
+  'mtable',
+  'mtd',
+  'mtext',
+  'mtr',
+  'munder',
+  'munderover',
+  'semantics',
+  'math',
+  'mi',
+  'mn',
+  'mo',
+  'ms',
+  'mspace',
+  'mtext',
+  'menclose',
+  'merror',
+  'mfenced',
+  'mfrac',
+  'mpadded',
+  'mphantom',
+  'mroot',
+  'mrow',
+  'msqrt',
+  'mstyle',
+  'mmultiscripts',
+  'mover',
+  'mprescripts',
+  'msub',
+  'msubsup',
+  'msup',
+  'munder',
+  'munderover',
+  'none',
+  'maligngroup',
+  'malignmark',
+  'mtable',
+  'mtd',
+  'mtr',
+  'mlongdiv',
+  'mscarries',
+  'mscarry',
+  'msgroup',
+  'msline',
+  'msrow',
+  'mstack',
+  'maction',
+  'semantics',
+  'annotation',
+  'annotation-xml',
+  'mjx-container',
+  'mjx-assistive-mml',
+];
+
 import { set_sidebar } from "../utils/auto_sidebar.mjs";	// 改成自己的路径
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
   base: '/personal-learning-note/', // 设置站点根路径
-  head: [["link", { rel: "icon", href: "/personal-learning-note/icon.png" }]],
+  head: [
+    // favicon
+    ["link", { rel: "icon", href: "/personal-learning-note/icon.png" }],
+    
+    // KaTeX 样式
+    ['link', { 
+      rel: 'stylesheet', 
+      href: 'https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.5.1/katex.min.css', 
+      crossorigin: '' 
+    }]
+  ],
+
   title: "个人学习记录",
   description: "JMComics学习记录，博士学习日记，个人技术博客，个人学习笔记",
+  markdown: {
+    config: (md) => {
+      md.use(markdownItKatex)
+    }
+  },
+
+  // 由于vitepress编译生成静态html文件时，无法识别插件生成的特殊标签，故需在编译时进行处理，将特殊标签定位自定义标签，防止编译报错
+  vue: {
+    template: {
+      compilerOptions: {
+        isCustomElement: (tag) => customElements.includes(tag)
+      }
+    }
+  },
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     outlineTitle:'目录',
-    outline:[2,6], // 目录层级
+    outline:[2,2], // 目录层级
     nav: [
       { text: '论文阅读笔记', items:[
         {text:'多模态', link: '/multimodel' },
