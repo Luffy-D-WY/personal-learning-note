@@ -13,7 +13,8 @@ export default defineConfig({
     nav: [
       { text: '论文阅读笔记', items:[
         {text:'多模态', link: '/multimodel' },
-        {text:'大模型安全', link: '/llm-safety' }
+        {text:'大模型安全', link: '/llm-safety' },
+        {text:'检索增强生成',link:'/Rag' },
       ] },
       { text:'杂项资料', items:[
         {text:'党史党章', link: '/party-history' },
